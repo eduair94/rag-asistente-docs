@@ -14,8 +14,10 @@ def responder_pregunta_mock(pregunta):
             "/v1/customers incluyendo el parámetro 'metadata' como un diccionario "
             "de pares clave-valor (por ejemplo: metadata={'plan': 'premium'})."
         ),
-        "fuente": "Stripe API docs: POST /v1/customers",
-        "seccion": "Customers",
+       "fuentes": {
+            "1": "Stripe API docs: POST /v1/customers",
+            "2": "Stripe API docs: Metadata Overview"
+       }
     }
 #*........................................................................................................./
 
