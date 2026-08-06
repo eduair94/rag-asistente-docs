@@ -1,6 +1,6 @@
 /* estilo.css */
 
-/* 1. Fondo completo */
+/* Fondo completo */
 [data-testid="stAppViewContainer"] {
     background-image: url("https://images.unsplash.com/photo-1552083940-86877723de7a?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
     background-attachment: fixed;
@@ -44,7 +44,39 @@
     margin-top: 1rem !important;
 }
 
-/* Ocultar botón de enviar */
+/* Ocultar boton de enviar */
 [data-testid="stForm"] button {
     display: none !important;
+}
+
+/* 5. BARRA LATERAL TRANSPARENTE Y ESTILOS */
+
+/* Fondo translucido para el panel de la barra lateral */
+[data-testid="stSidebar"] {
+    background-color: rgba(12, 12, 18, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Transparencia en el contenedor interno de la barra lateral */
+[data-testid="stSidebar"] > div:first-child {
+    background: transparent !important;
+}
+
+/* Estilo de boton para la flecha de abrir y cerrar menu*/
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="stSidebarExpandButton"] button {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 50% !important;
+    padding: 6px !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Efecto al pasar el mouse por el boton de la flecha */
+[data-testid="stSidebarCollapseButton"] button:hover,
+[data-testid="stSidebarExpandButton"] button:hover {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: scale(1.08);
 }

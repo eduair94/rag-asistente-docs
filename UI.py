@@ -1,9 +1,12 @@
 import streamlit as st
 import time #!esta libreria solo esta puesta como prueba para retrasar cada mensaje y asi probar ciertos parametros
+import json
 
-#*Configuración de la página........................................................./
+#*Configuracion de la pagina........................................................./
 
-st.set_page_config(page_title="Asistente Stripe RAG", page_icon="💳")
+st.set_page_config(page_title="Asistente Stripe RAG", 
+                   page_icon="💳", 
+                   initial_sidebar_state="collapsed")
 
 #*def_cargar_css....................................../
 
@@ -17,6 +20,28 @@ BACKEND_URL = "http://localhost:8000/preguntar"
 
 if "historial" not in st.session_state:
         st.session_state.historial = []
+
+#*......opciones_del_chat............................................................................/
+
+with st.sidebar:
+    st.title("settings")
+    
+    # 1. Boton para reiniciar el chat
+    if st.button("clean chat", use_container_width=True):
+        st.session_state.historial = []
+        st.rerun()
+
+    # 2. Boton para exportar el chat en JSON (solo aparece si hay mensajes en el historial)
+    if st.session_state.historial:
+        historial_json = json.dumps(st.session_state.historial, indent=4, ensure_ascii=False)
+        
+        st.download_button(
+            label="Download chat historial",
+            data=historial_json,
+            file_name="historial_chat_stripe.json",
+            mime="application/json",
+            use_container_width=True
+        )
 
 #*................................................................................../
 main_container = st.container()
