@@ -84,30 +84,37 @@ def buscar_contexto_relevante(embedding, limite=3):
 	Busca los fragmentos más relevantes en PostgreSQL usando distancia coseno con pgvector.
 	"""
 	try:
-		conn = psycopg2.connect(**base_dato_config)
-		with conn.cursor() as cur:
+		conexion = psycopg2.connect(**base_dato_config)
+		with conexion.cursor() as cur:
 			# Usamos <=> para distancia coseno en pgvector
 			embedding_pg = "[" + ",".join(map(str, embedding)) + "]"
 			cur.execute(
 			"""
-			SELECT texto, fuente, seccion 
-			FROM stripe_chunks 
-			ORDER BY embedding <=> %s::vector 
+			SELECT texto, fuente, seccion
+			FROM stripe_chunks
+			ORDER BY embedding <=> %s::vector
 			LIMIT %s;
 			""",
 			(embedding_pg, limite)
 			)
 			resultados = cur.fetchall()
-			conn.close()
+			conexion.close()
 		return resultados
 	except Exception as e:
 		print(f"Error al conectar o consultar PostgreSQL: {e}")
 		return []
 
-def generar_respuesta(pregunta):
+def generar_respuesta(datos_entrada):
 	"""
-	Genera el embedding de la pregunta, recupera contexto relevante de PostgreSQL, construye el prompt final con RAG, y obtiene la respuesta de la IA. Con devuelve de un diccionario con la respuesta, los fuente y errores ai hay.
+	Genera el embedding de la pregunta, recupera contexto relevante de PostgreSQL, construye el prompt final con RAG, y obtiene la respuesta de la IA.
+	Devuelve un diccionario con la estructura de respuesta anidada.
 	"""
+	datos_pregunta = datos_entrada.get("pregunta", {})
+	pregunta = datos_pregunta.get("texto", "")
+	historial_externo = datos_pregunta.get("historial", [])
+	config_modelo = datos_pregunta.get("modelo_de_ia", {})
+	modelo_solicitado = config_modelo.get("modelo")
+
 	# Generar embedding y buscar contexto relevante
 	print("Buscando información de soporte...")
 	embedding = generar_embedding_consulta(pregunta)
@@ -119,13 +126,13 @@ def generar_respuesta(pregunta):
 	contexto_lista = []
 	if fragmentos:
 		for texto, fuente, seccion in fragmentos:
-			ref = f"(Sección: {seccion})" if seccion else ""
-			contexto_lista.append(f"- [{fuente}{ref}]: {texto}")
+			referencia = f"(Sección: {seccion})" if seccion else ""
+			contexto_lista.append(f"- [{fuente}{referencia}]: {texto}")
 			if fuente not in fuentes_utilizadas:
 				fuentes_utilizadas.append(fuente)
 	contexto = "\n".join(contexto_lista)
 
-				# Crear el prompt final inyectando el contexto si existe
+	# Crear el prompt final inyectando el contexto si existe
 	if contexto:
 		pregunta_con_contexto = (
 			f"Utiliza la siguiente información de contexto para responder la pregunta del usuario de manera precisa.\n"
@@ -135,11 +142,10 @@ def generar_respuesta(pregunta):
 			)
 	else:
 		pregunta_con_contexto = pregunta
-		# Cargar historial de conversación
-	historial = cargar_memoria()
-		# Preparar el historial para la API
+
+	# Preparar el historial para la API
 	historial_api = []
-	for mensaje in historial:
+	for mensaje in historial_externo:
 		historial_api.append({
 			"role": mensaje["rol"],
 			"parts": [{"text": mensaje["contenido"]}]
@@ -149,9 +155,19 @@ def generar_respuesta(pregunta):
 		"role": "user",
 		"parts": [{"text": pregunta_con_contexto}]
 	})
+
 	respuesta_final = None
+	modelo_usado = 0
+
+	# Determinar la lista de modelos a intentar
+	if modelo_solicitado:
+		lista_de_modelos = [modelo_solicitado]
+	else:
+		lista_de_modelos = modelos_ia
+
 	# Intentar con los modelos en orden
-	for nombre_modelo in modelos_ia:
+	for nombre_modelo in lista_de_modelos:
+		modelo_usado = nombre_modelo
 		try:
 			respuesta = cliente.models.generate_content(
 				model=nombre_modelo,
@@ -160,26 +176,73 @@ def generar_respuesta(pregunta):
 			respuesta_final = respuesta.text
 			break # Si funciona salimos del bucle
 		except Exception as error:
+			error_str = str(error)
+			if "404" in error_str or "NOT_FOUND" in error_str.upper():
+				return {
+					"respuesta": {
+						"texto": 0,
+						"fuentes": 0,
+						"modelo_de_ia": {
+							"tipo": "gemini",
+							"modelo": nombre_modelo
+						},
+						"errores": {
+							"MODELO_INEXISTANTE": f"El modelo {nombre_modelo} no existe."
+						}
+					}
+				}
+
+			if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str.upper():
+				print(f"Límite de tokens alcanzado con {nombre_modelo}. Intentando con el siguiente...")
+				# Si es el último modelo, retornamos el error
+				if nombre_modelo == lista_de_modelos[-1]:
+					return {
+						"respuesta": {
+							"texto": 0,
+							"fuentes": 0,
+							"modelo_de_ia": {
+								"tipo": "gemini",
+								"modelo": nombre_modelo
+							},
+							"errores": {
+								"TOKENS_ALCANZADO": "Has alcanzado el límite de tokens de este modelo. Inténtalo de nuevo más tarde o utiliza otro modelo."
+							}
+						}
+					}
+				continue
+
 			print(f"Error con el modelo {nombre_modelo}: {error}. Intentando con el siguiente...")
 			continue
 
 	if respuesta_final:
-		# En el historial local guardamos la pregunta original (no la que tiene el contexto inyectado)
-		historial.append({"rol": "user", "contenido": pregunta})
-		historial.append({"rol": "model", "contenido": respuesta_final})
-		guardar_memoria(historial)
-		# Crear diccionario de fuentes enumeradas o '0' si no hay
+		# Guardamos en la memoria local el mensaje original (sin contexto)
+		historial_guardar = historial_externo + [{"rol": "user", "contenido": pregunta}, {"rol": "model", "contenido": respuesta_final}]
+		guardar_memoria(historial_guardar)
+
+		# Crear diccionario de fuentes enumeradas o 0 si no hay
 		diccionario_fuentes = {str(i + 1): fuente for i, fuente in enumerate(fuentes_utilizadas)} if fuentes_utilizadas else 0
 		return {
-			"respuesta": respuesta_final,
-			"fuentes": diccionario_fuentes
+			"respuesta": {
+				"texto": respuesta_final,
+				"fuentes": diccionario_fuentes,
+				"modelo_de_ia": {
+					"tipo": "gemini",
+					"modelo": modelo_usado
+				}
+			}
 		}
 	else:
 		return {
-			"respuesta": 0,
-			"fuentes": 0,
-			"errores": {
-				"modelo_error": "No se pudo generar una respuesta con ninguno de los modelos disponibles."
+			"respuesta": {
+				"texto": 0,
+				"fuentes": 0,
+				"modelo_de_ia": {
+					"tipo": "gemini",
+					"modelo": modelo_usado
+				},
+				"errores": {
+					"modelo_error": "No se pudo generar una respuesta con ninguno de los modelos disponibles."
+				}
 			}
 		}
 
@@ -191,17 +254,28 @@ if __name__ == "__main__":
 		if pregunta_usuario.lower() == '.salir':
 			print('⁠(⁠ ⁠ ⁠•⁠ ⁠‿⁠ ⁠•⁠ ⁠ ⁠)' *20)
 			break
-		resultado = generar_respuesta(pregunta_usuario)
 
-		if "errores" in resultado:
+		# Cargamos la memoria para enviarla al script interno
+		historial_actual = cargar_memoria()
+		datos_paquete = {
+			"pregunta": {
+				"texto": pregunta_usuario,
+				"historial": historial_actual
+				# Opcional: "modelo_de_ia": {"tipo": "gemini", "modelo": "gemini-2.5-pro"}
+			}
+		}
+
+		resultado = generar_respuesta(datos_paquete)
+
+		if "errores" in resultado["respuesta"]:
 			print("Error:")
-			print(json.dumps(resultado["errores"], indent=4, ensure_ascii=False))
+			print(json.dumps(resultado["respuesta"]["errores"], indent=4, ensure_ascii=False))
 		else:
 			print("✦Respuesta:")
-			print(resultado["respuesta"])
+			print(resultado["respuesta"]["texto"])
 
 			print("\n🌐Fuentes:")
-			if resultado["fuentes"] == 0:
+			if resultado["respuesta"]["fuentes"] == 0:
 				print("Ninguno")
 			else:
-				print(json.dumps(resultado["fuentes"], indent=4, ensure_ascii=False))
+				print(json.dumps(resultado["respuesta"]["fuentes"], indent=4, ensure_ascii=False))
