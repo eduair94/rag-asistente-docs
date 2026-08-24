@@ -67,6 +67,10 @@ main_container = st.container()
 with main_container:
     st.title("Documentacion de Stripe")
     st.caption("Realiza alguna pregunta relacionada sobre la API de Stripe y el asistente te respondera")
+    
+#* Disclaimer visible de uso gratuito.............................................../
+
+    st.info(" **Nota de Demo:** Esta version utiliza una API local gratuita, si se supera el limite de solicitudes por minuto, la respuesta podria tardar o mostrar un error temporal.", icon="ℹ️")
 
 #*def_responder_pregunta_mock................./
 
@@ -95,7 +99,7 @@ with main_container:
                             for num, fuente in fuentes.items():
                                 st.write(f"**[{num}]** {fuente}")
 
-#*Preguntas_sugeridas_(Quick Prompts)................................................................................/
+#*Preguntas_sugeridas_(Quick Prompts)................................................................. me               /
 
     st.markdown("**Sugerencias de busqueda:**")
     col1, col2, col3 = st.columns(3)
@@ -135,15 +139,28 @@ if (enviado and pregunta) or texto_defecto:
 
     with spinner_placeholder:
         with st.spinner("consultando la documentacion, porfavor espere"):
-            resultado = responder_pregunta_mock(pregunta_a_enviar)
+            try:
+                resultado = responder_pregunta_mock(pregunta_a_enviar)
+            except Exception as e:
+                resultado = {
+                    "respuesta": 0,
+                    "errores": {"modelo_error": f"Error de conexión con el servicio: {str(e)}"}
+                }
 
-    if resultado.get("respuesta") == 0 or "errores" in resultado:
-        mensaje_error = resultado.get("errores", {}).get("modelo_error", "no se pudo obtener una respuesta valida de la codumentacion")
+    # Handler de errores mejorado
+    if not resultado or resultado.get("respuesta") == 0 or "errores" in resultado:
+        mensaje_error = "Ocurrió un error inesperado al procesar la solicitud."
+        if isinstance(resultado, dict) and "errores" in resultado:
+            errores = resultado.get("errores", {})
+            if isinstance(errores, dict):
+                mensaje_error = errores.get("modelo_error", mensaje_error)
+            elif isinstance(errores, str):
+                mensaje_error = errores
 
         st.session_state.historial.append({
             "rol": "assistant",
             "contenido": "",
-            "error": mensaje_error    
+            "error": f"⚠️ {mensaje_error}"    
         })
     else:
         st.session_state.historial.append({

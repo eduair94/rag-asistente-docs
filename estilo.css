@@ -15,7 +15,7 @@
     background: transparent !important;
 }
 
-/* 2. TARJETA PRINCIPAL */
+/* TARJETA PRINCIPAL */
 [data-testid="stMainBlockContainer"] {
     background-color: rgba(12, 12, 18, 0.94) !important;
     padding: 2.5rem !important;
@@ -26,7 +26,7 @@
     margin: 2rem auto !important; /* Margen superior/inferior cómodo */
 }
 
-/* 3. LIMPIAR EL BORDE DEL CONTENEDOR CON HEIGHT */
+/* LIMPIAR EL BORDE DEL CONTENEDOR CON HEIGHT */
 [data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
     background: transparent !important;
@@ -37,7 +37,7 @@
     color: #CBD5E1 !important;
 }
 
-/* 4. FORMULARIO FIJO EN LA BASE */
+/*FORMULARIO FIJO EN LA BASE */
 [data-testid="stForm"] {
     border: none !important;
     padding: 0 !important;
@@ -49,7 +49,7 @@
     display: none !important;
 }
 
-/* 5. BARRA LATERAL TRANSPARENTE Y ESTILOS */
+/*BARRA LATERAL TRANSPARENTE Y ESTILOS */
 
 /* Fondo translucido para el panel de la barra lateral */
 [data-testid="stSidebar"] {
@@ -80,3 +80,5 @@
     border-color: rgba(255, 255, 255, 0.4) !important;
     transform: scale(1.08);
 }
+
+
