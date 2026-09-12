@@ -1,6 +1,8 @@
-# Demo en Hugging Face Spaces (SDK Docker, capa gratuita): Streamlit + PostgreSQL/pgvector en un solo contenedor.
+# syntax=docker/dockerfile:1
+# Demo en Render (plan free, runtime Docker): Streamlit + PostgreSQL/pgvector en un solo contenedor.
 # La base vectorial se arma en el build con el pipeline del repo (descargar_stripe.py -> generar_embeddings.py)
-# usando el secreto GEMINI_API_KEY, y queda horneada en la imagen (sin llamadas de embeddings al arrancar).
+# usando el secret file GEMINI_API_KEY, y queda horneada en la imagen (sin llamadas de embeddings al arrancar).
+# En runtime la app lee la variable de entorno GEMINI_API_KEY.
 FROM pgvector/pgvector:pg17
 
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv \
