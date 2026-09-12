@@ -8,10 +8,10 @@ FROM pgvector/pgvector:pg17
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# HF Spaces ejecuta el contenedor con UID 1000
+# Usuario no-root (UID 1000); PYTHONUNBUFFERED para que los print() de rag_ia lleguen a los logs de Render
 RUN useradd -m -u 1000 user
 USER user
-ENV PATH="/home/user/venv/bin:$PATH" PGDATA=/home/user/pgdata
+ENV PATH="/home/user/venv/bin:$PATH" PGDATA=/home/user/pgdata PYTHONUNBUFFERED=1
 WORKDIR /home/user/app
 
 COPY --chown=user requisitos.txt .
@@ -34,6 +34,7 @@ RUN --mount=type=secret,id=GEMINI_API_KEY,mode=0444,required=true \
 
 EXPOSE 7860
 ENTRYPOINT []
-CMD pg_ctl -o "-p 5433 -k /tmp" -w start \
+# Logs de Postgres a archivo: el sondeo de puertos de Render genera "invalid length of startup packet" cada segundo
+CMD pg_ctl -o "-p 5433 -k /tmp" -l /tmp/postgres.log -w start \
     && mkdir -p .secreto && printf '{"claves_gemini": "%s"}' "$GEMINI_API_KEY" > .secreto/claves_api.json \
     && exec streamlit run UI.py --server.port=7860 --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false
