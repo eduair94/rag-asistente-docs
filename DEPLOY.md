@@ -9,7 +9,7 @@ Demo de referencia: https://rag-asistente-docs.onrender.com
 Un solo contenedor Docker (ver [`Dockerfile`](Dockerfile)) con:
 
 - **Streamlit** (`UI.py`) escuchando en el puerto 7860.
-- **PostgreSQL 17 + pgvector**, con la misma configuración que la base local del README (puerto 5433, base `rag_stripe`, usuario `postgres`). Por eso `rag_ia.py` funciona sin cambios.
+- **PostgreSQL 17 + pgvector**, con la misma configuración que la base local del README (puerto 5433, base `rag_stripe`, usuario `postgres`). Por eso la conexión de `rag_ia.py` y `generar_embeddings.py` funciona sin cambios.
 
 La base vectorial se arma **durante el build**, con el mismo pipeline que en local:
 
@@ -103,7 +103,7 @@ Abrí http://localhost:7860. El `Dockerfile` copia solo `*.py`, `estilo.css` y `
 
 ## Mantenimiento
 
-- **Cambios de código:** hacé push a `main` y lanzá **Manual Deploy → Deploy latest commit**. Si conectaste tu cuenta de GitHub en vez de usar "Public Git Repository", Render despliega solo con cada push.
+- **Cambios de código:** hacé push a `main` y Render redespliega solo: Auto-Deploy viene activado, también con "Public Git Repository". Si lo desactivaste, usá **Manual Deploy → Deploy latest commit**.
 - **Actualizar la documentación de Stripe:** **Manual Deploy → Clear build cache & deploy**. Sin limpiar el caché, Docker reutiliza la capa donde ya están los embeddings.
 - **Cambiar la API key:** editá `GEMINI_API_KEY` en **Environment** y también el Secret File, para que el próximo build use la nueva.
 
@@ -132,4 +132,4 @@ Tenelos en cuenta antes de mostrar la demo:
 
 - **Hugging Face Spaces:** los Spaces Docker y Gradio en CPU gratuita ahora requieren suscripción PRO.
 - **Streamlit Community Cloud:** no permite correr PostgreSQL en el mismo servicio. Haría falta una base externa (Neon, Supabase) y cambiar la configuración de conexión en `rag_ia.py`.
-- **Render Free + Docker:** corre PostgreSQL y Streamlit juntos sin tocar el código de la app, con costo $0.
+- **Render Free + Docker:** corre PostgreSQL y Streamlit juntos, con la misma configuración de conexión que en local y costo $0.
