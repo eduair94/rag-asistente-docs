@@ -62,18 +62,18 @@ def construir_texto_chunk(ruta, metodo, operacion):
 
 	if resumen:
 		partes.append(f"Resumen: {resumen}")
-		descripcion = operacion.get("description", "")
+	descripcion = operacion.get("description", "")
 
-		if descripcion:
-			partes.append(f"Descripción: {descripcion}")
+	if descripcion:
+		partes.append(f"Descripción: {descripcion}")
 
-		# Parámetros del endpoint (si los tiene)
-		parametros = operacion.get("parameters", [])
-		if parametros:
-			nombres_parametros = [param.get("name", "") for param in parametros if param.get("name")]
-			if nombres_parametros:
-				partes.append(f"Parámetros: {', '.join(nombres_parametros)}")
-				return "\n".join(partes)
+	# Parámetros del endpoint (si los tiene)
+	parametros = operacion.get("parameters", [])
+	if parametros:
+		nombres_parametros = [param.get("name", "") for param in parametros if param.get("name")]
+		if nombres_parametros:
+			partes.append(f"Parámetros: {', '.join(nombres_parametros)}")
+	return "\n".join(partes)
 
 
 def procesar_spec():
