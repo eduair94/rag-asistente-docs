@@ -87,6 +87,8 @@ Demo en vivo: https://rag-asistente-docs.onrender.com
 
 - Guadalupe Alba - [@guadalupealba](https://github.com/guadalupealba)
 - Mugen - [@moneythemoney999](https://github.com/moneythemoney999)
+- D4HACK — [@D4HACK-afk](https://github.com/D4HACK-afk)
+- Eduardo — [@eduair94](https://github.com/eduair94)
 
 ## Demo
 
