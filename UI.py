@@ -72,9 +72,23 @@ with main_container:
 
     st.info(" **Nota de Demo:** Esta version utiliza una API local gratuita, si se supera el limite de solicitudes por minuto, la respuesta podria tardar o mostrar un error temporal.", icon="ℹ️")
 
-#*def_responder_pregunta_mock................./
+#*def_responder_pregunta (RAG real: Gemini + pgvector via rag_ia)................./
 
-    from funciones import responder_pregunta_mock
+    from rag_ia import generar_respuesta
+
+    def responder_pregunta(pregunta):
+        # Historial previo (pares pregunta/respuesta sin error) en el formato de rag_ia: roles "user"/"model"
+        previos = st.session_state.historial[:-1]
+        historial = []
+        for preg, resp in zip(previos[::2], previos[1::2]):
+            if not resp.get("error"):
+                historial += [{"rol": "user", "contenido": preg["contenido"]}, {"rol": "model", "contenido": resp["contenido"]}]
+
+        r = generar_respuesta({"pregunta": {"texto": pregunta, "historial": historial}})["respuesta"]
+        resultado = {"respuesta": r["texto"], "fuentes": r["fuentes"] or {}, "modelo": r["modelo_de_ia"]["modelo"]}
+        if r.get("errores"):
+            resultado["errores"] = {"modelo_error": next(iter(r["errores"].values()))}
+        return resultado
 
 #*for_para_los_mensajes_del_historial................................................................................./
 
@@ -140,7 +154,7 @@ if (enviado and pregunta) or texto_defecto:
     with spinner_placeholder:
         with st.spinner("consultando la documentacion, porfavor espere"):
             try:
-                resultado = responder_pregunta_mock(pregunta_a_enviar)
+                resultado = responder_pregunta(pregunta_a_enviar)
             except Exception as e:
                 resultado = {
                     "respuesta": 0,

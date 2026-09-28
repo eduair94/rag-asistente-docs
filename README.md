@@ -26,7 +26,7 @@ Casos de uso de ejemplo:
 | API de IA | Gemini (+ Groq como fallback, fase 2) | Decidido |
 | Base de datos vectorial | pgvector | Decidido |
 | Frontend | Streamlit | Decidido |
-| Deploy | Railway / Render | Pendiente |
+| Deploy | Render (plan Free, Docker) — ver [DEPLOY.md](DEPLOY.md) | Decidido |
 
 Ver el razonamiento completo detrás de cada elección en DECISIONS.md.
 
@@ -84,4 +84,6 @@ uvicorn main:app --reload
 
 ## Demo
 
-Pendiente: link al video demo de 2 minutos
+- Demo en vivo: https://rag-asistente-docs.onrender.com (plan Free de Render: si estuvo inactiva, tarda alrededor de 1 minuto en despertar)
+- Cómo desplegar tu propia demo: ver [DEPLOY.md](DEPLOY.md)
+- Pendiente: link al video demo de 2 minutos

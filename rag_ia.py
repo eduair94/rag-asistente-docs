@@ -177,7 +177,8 @@ def generar_respuesta(datos_entrada):
 			break # Si funciona salimos del bucle
 		except Exception as error:
 			error_str = str(error)
-			if "404" in error_str or "NOT_FOUND" in error_str.upper():
+			# Un modelo retirado (404) no corta la cadena: solo es error final si es el último de la lista
+			if ("404" in error_str or "NOT_FOUND" in error_str.upper()) and nombre_modelo == lista_de_modelos[-1]:
 				return {
 					"respuesta": {
 						"texto": 0,
