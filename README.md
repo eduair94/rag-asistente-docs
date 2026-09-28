@@ -31,51 +31,57 @@ Casos de uso de ejemplo:
 Ver el razonamiento completo detrás de cada elección en DECISIONS.md.
 
 ## Cómo correrlo (local)
-* 1. Clonar el repo
-```bash
+
+La forma más simple es con Docker (ver guía completa en DEPLOY.md):
+
+\`\`\`bash
 git clone https://github.com/guadalupealba/rag-asistente-docs.git
 cd rag-asistente-docs
-```
+export GEMINI_API_KEY="tu_api_key"
+docker build --secret id=GEMINI_API_KEY,env=GEMINI_API_KEY -t rag-demo .
+docker run --rm -e GEMINI_API_KEY -p 7860:7860 rag-demo
+# abrir http://localhost:7860
+\`\`\`
 
-* 2. Descargar Miniconda
-```bash
-A=$(uname -m) && F=$([ "$A" = aarch64 ] && echo aarch64 || [ "$A" = x86_64 ] && echo x86_64 || echo armv7l) && wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-$F.sh" -O miniconda.sh && bash miniconda.sh -b -p "$HOME/miniconda3" && "$HOME/miniconda3/bin/conda" init bash
- # Este comando de Linux hace la detección automática de la arquitectura del sistema y instalar la versión de miniconda adecuada
-```
+También se puede correr manualmente, sin Docker:
 
-* 3. Instalar dependencias
-```bash
-pip install -r requisitos.txt
-```
+\`\`\`bash
+# 1. Clonar el repo
+git clone https://github.com/guadalupealba/rag-asistente-docs.git
+cd rag-asistente-docs/backend
 
-* 4. Guardar el API Gemini 
-```bash
-mkdir -p .secreto && echo '{"claves_gemini": "< el API de gemini aquí>"}' > .secreto/.claves_api.json
-```
+# 2. Crear entorno virtual e instalar dependencias
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+pip install requests google-genai psycopg2-binary python-dotenv streamlit
 
-# 5. Levantar PostgreSQL + pgvector (via Conda)
-```bash
+# 3. Configurar variables de entorno
+cp .env.example .env
+# Completar .env con tu GEMINI_API_KEY real
+
+# 4. Levantar PostgreSQL + pgvector (via Conda)
 conda create -n rag-db -c conda-forge postgresql pgvector -y
 conda activate rag-db
-initdb -D <RUTA QUE ELIJES> -U postgres -W
-pg_ctl -D <ESA MISMA RUTA> -o "-p 5433" start
+initdb -D <ruta-que-elijas> -U postgres -W
+pg_ctl -D <esa-misma-ruta> -o "-p 5433" start
 createdb -U postgres -p 5433 rag_stripe
 psql -U postgres -p 5433 -d rag_stripe -c "CREATE EXTENSION vector;"
-```
 
-```bash
-# 6. Descargar y procesar la documentacion de Stripe
-python descargar_stripe_docs.py
+# 5. Descargar y procesar la documentacion de Stripe
+python descargar_stripe.py
 
-# 7. Generar embeddings y guardarlos en pgvector
+# 6. Generar embeddings y guardarlos en pgvector
 python generar_embeddings.py
 
-# 8. Probar que la busqueda funciona
-python rag_ia.py "como creo un customer con metadata"
+# 7. Probar que la busqueda funciona
+python probar_busqueda.py "como creo un customer con metadata"
 
-# 9. Correr el servidor
-uvicorn main:app --reload
-```
+# 8. Correr la interfaz
+streamlit run UI.py
+\`\`\`
+
+Demo en vivo: https://rag-asistente-docs.onrender.com
 
 ## Autores
 
