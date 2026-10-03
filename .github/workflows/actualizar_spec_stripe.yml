@@ -1,0 +1,41 @@
+# Revisa todos los días si Stripe publicó una versión nueva de su especificación OpenAPI.
+# Si cambió, actualiza version_stripe.txt y hace push a la rama principal. Ese push redespliega
+# la demo en Render y, como el Dockerfile copia version_stripe.txt antes de generar los embeddings,
+# Docker no reutiliza la capa cacheada: la base vectorial se regenera con la documentación nueva.
+name: Actualizar spec de Stripe
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  revisar-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Comparar la versión del repo con la publicada por Stripe
+        id: version
+        shell: bash
+        run: |
+          remota=$(curl -fsSL --retry 5 --retry-all-errors https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json \
+            | python3 -c "import json, sys; print(json.load(sys.stdin)['info']['version'])")
+          local=$(cat version_stripe.txt 2>/dev/null || true)
+          echo "Versión en el repo: ${local:-ninguna}. Versión publicada por Stripe: $remota"
+          if [ -n "$remota" ] && [ "$remota" != "$local" ]; then
+            echo "$remota" > version_stripe.txt
+            echo "nueva=$remota" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit y push de la versión nueva
+        if: steps.version.outputs.nueva
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version_stripe.txt
+          git commit -m "Actualiza la spec de Stripe a ${{ steps.version.outputs.nueva }}"
+          git push

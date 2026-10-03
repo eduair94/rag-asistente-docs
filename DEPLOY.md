@@ -104,7 +104,7 @@ Abrí http://localhost:7860. El `Dockerfile` copia solo `*.py`, `estilo.css` y `
 ## Mantenimiento
 
 - **Cambios de código:** hacé push a `main` y Render redespliega solo: Auto-Deploy viene activado, también con "Public Git Repository". Si lo desactivaste, usá **Manual Deploy → Deploy latest commit**.
-- **Actualizar la documentación de Stripe:** **Manual Deploy → Clear build cache & deploy**. Sin limpiar el caché, Docker reutiliza la capa donde ya están los embeddings.
+- **Actualizar la documentación de Stripe:** es automático. El workflow [`actualizar_spec_stripe.yml`](.github/workflows/actualizar_spec_stripe.yml) revisa todos los días si Stripe publicó una versión nueva de la spec; si cambió, actualiza [`version_stripe.txt`](version_stripe.txt) y hace push a `main`. Ese push redespliega la demo y, como el `Dockerfile` copia `version_stripe.txt` antes de generar los embeddings, Docker no reutiliza la capa cacheada. En un fork, GitHub desactiva los workflows programados: activalos en la pestaña **Actions**. Para forzarlo a mano: **Actions → Actualizar spec de Stripe → Run workflow**, o **Manual Deploy → Clear build cache & deploy** en Render.
 - **Cambiar la API key:** editá `GEMINI_API_KEY` en **Environment** y también el Secret File, para que el próximo build use la nueva.
 
 ## Límites del plan Free

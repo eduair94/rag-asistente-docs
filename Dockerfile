@@ -18,7 +18,9 @@ COPY --chown=user requisitos.txt .
 RUN python3 -m venv /home/user/venv \
     && pip install --no-cache-dir -r requisitos.txt streamlit==1.63.0
 
-COPY --chown=user *.py estilo.css ./
+# version_stripe.txt va acá a propósito: cuando el workflow actualizar_spec_stripe lo cambia,
+# Docker invalida la caché del RUN siguiente y la base vectorial se regenera con la spec nueva
+COPY --chown=user *.py estilo.css version_stripe.txt ./
 
 # Misma configuración que la base local del README (puerto 5433, db rag_stripe, usuario postgres)
 RUN --mount=type=secret,id=GEMINI_API_KEY,mode=0444,required=true \
