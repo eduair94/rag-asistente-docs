@@ -67,9 +67,20 @@ Motivo de la elección:
 - Permite armar rápidamente una interfaz de chat funcional, con historial de mensajes y visualización de la fuente citada debajo de cada respuesta
 - Deploy simple y gratuito (Streamlit Community Cloud, o junto al backend en Railway/Render)
 
+
+
 ## 7. Deploy
 
-Pendiente. Candidatos: Railway, Render.
+Se eligió Render (plan Free, runtime Docker) para alojar la demo en vivo.
+
+Motivo de la elección:
+- Plan gratuito suficiente para una demo de portafolio (se duerme tras 15 minutos sin tráfico, tarda alrededor de 1 minuto en reactivarse)
+- Permite levantar todo el stack (Streamlit + PostgreSQL con pgvector) en un solo contenedor Docker, sin necesitar servicios separados
+- La base de datos vectorial se genera automáticamente durante el build del contenedor, corriendo el mismo pipeline del repo (descargar_stripe.py -> generar_embeddings.py), usando un secret para la API key que nunca queda expuesto dentro de la imagen
+
+Demo en vivo: https://rag-asistente-docs.onrender.com
+
+La guía completa para levantar una instancia propia está en DEPLOY.md.
 
 ## 8. Problemas encontrados
 
