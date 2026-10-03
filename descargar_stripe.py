@@ -28,22 +28,48 @@ palabras_filtro = [
 ]
 
 
-def descargar_spec():
-	"""Descarga el archivo spec3.json de Stripe si no está ya descargado."""
-	os.makedirs(ruta_datos, exist_ok=True)
+def leer_version_local():
+	"""Devuelve la versión (info.version) del spec3.json local, o None si no hay uno válido."""
+	if not os.path.exists(raw_spec_ruta):
+		return None
+	try:
+		with open(raw_spec_ruta, "r", encoding="utf-8") as f:
+			return json.load(f)["info"]["version"]
+	except (ValueError, KeyError):
+		return None
 
-	if os.path.exists(raw_spec_ruta):
-		print(f"El archivo ya existe en {raw_spec_ruta}, no se vuelve a descargar.")
+
+def descargar_spec():
+	"""
+	Descarga el spec3.json de Stripe y reemplaza el archivo local solo si la versión
+	publicada (info.version) es distinta. Si la descarga falla pero hay una copia
+	local, se sigue con esa copia.
+	"""
+	os.makedirs(ruta_datos, exist_ok=True)
+	version_local = leer_version_local()
+
+	print("Descargando especificación de Stripe (puede tardar un momento, pesa ~8 MB)...")
+	try:
+		response = requests.get(stripe_spec_url, timeout=120)
+		response.raise_for_status()
+		version_remota = response.json()["info"]["version"]
+	except (requests.RequestException, ValueError, KeyError) as error:
+		if version_local is None:
+			raise
+		print(f"No se pudo descargar la especificación ({error}). Se usa la copia local (versión {version_local}).")
 		return
 
-	print("Descargando especificación de Stripe (puede tardar un momento, pesa ~7 MB)...")
-	response = requests.get(stripe_spec_url)
-	response.raise_for_status()
+	if version_remota == version_local:
+		print(f"La especificación local ya está al día (versión {version_local}).")
+		return
 
 	with open(raw_spec_ruta, "w", encoding="utf-8") as f:
 		f.write(response.text)
 
-	print(f"Descarga completa. Guardado en {raw_spec_ruta}")
+	if version_local:
+		print(f"Especificación actualizada de la versión {version_local} a la {version_remota}. Guardada en {raw_spec_ruta}")
+	else:
+		print(f"Descarga completa (versión {version_remota}). Guardada en {raw_spec_ruta}")
 
 
 def endpoint_es_relevante(ruta):

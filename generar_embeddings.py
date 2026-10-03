@@ -93,6 +93,18 @@ def guardar_chunk(conn, chunk, embedding):
     conn.commit()
 
 
+def borrar_chunks_obsoletos(conn, ids_vigentes):
+    """Borra los chunks de endpoints que ya no están en la especificación actual de Stripe."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM stripe_chunks WHERE NOT (id = ANY(%s)) RETURNING id;",
+            (list(ids_vigentes),),
+        )
+        borrados = [fila[0] for fila in cur.fetchall()]
+    conn.commit()
+    return borrados
+
+
 def main():
     api_key = obtener_clave_api()
 
@@ -105,14 +117,23 @@ def main():
     conn = psycopg2.connect(**base_dato_config)
     crear_tabla(conn)
 
+    ids_guardados = []
     for i, chunk in enumerate(chunks, start=1):
         if not chunk.get("texto"):
             print(f"[{i}/{len(chunks)}] Saltando chunk {chunk['id']} por texto nulo o vacío.")
             continue
-            
+
         print(f"[{i}/{len(chunks)}] Generando embedding para: {chunk['id']}")
         embedding = generar_embedding(cliente, [chunk["texto"]])
         guardar_chunk(conn, chunk, embedding)
+        ids_guardados.append(chunk["id"])
+
+    # Si Stripe quitó un endpoint, su chunk viejo no se pisa con el upsert: hay que borrarlo
+    if ids_guardados:
+        borrados = borrar_chunks_obsoletos(conn, ids_guardados)
+        for id_borrado in borrados:
+            print(f"Borrado chunk obsoleto: {id_borrado}")
+        print(f"Se borraron {len(borrados)} chunks que ya no están en la documentación de Stripe.")
 
     conn.close()
     print("¡Listo! Todos los embeddings se generaron y guardaron en pgvector.")
